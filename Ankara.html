@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Generar Carta de Daños</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    label, input, textarea { display: block; margin: 10px 0; }
+    .lista-danos li { margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Formulario para Generar Carta</h1>
+  <form id="formCarta">
+    <label>Nombre: <input type="text" name="Nombre" required></label>
+    <label>Teléfono: <input type="text" name="Telefono" required></label>
+    <label>Correo: <input type="email" name="Correo" required></label>
+    <label>Dirección: <input type="text" name="Direccion" required></label>
+    <label>Número de Crédito: <input type="text" name="NumeroDeCredito" required></label>
+
+    <label>Lista de Daños:</label>
+    <ul id="lista-danos" class="lista-danos"></ul>
+    <input type="text" id="nuevo-dano">
+    <button type="button" onclick="agregarDano()">Agregar Daño</button>
+
+    <button type="submit">Generar Word</button>
+  </form>
+
+  <script src="https://unpkg.com/pizzip@3.1.6/dist/pizzip.min.js"></script>
+  <script src="https://unpkg.com/docxtemplater@3.42.0/build/docxtemplater.js"></script>
+  <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script>
+    const danos = [];
+
+    function agregarDano() {
+      const entrada = document.getElementById("nuevo-dano");
+      const texto = entrada.value.trim();
+      if (texto) {
+        danos.push(texto);
+        const li = document.createElement("li");
+        li.textContent = texto;
+        document.getElementById("lista-danos").appendChild(li);
+        entrada.value = '';
+      }
+    }
+
+    document.getElementById("formCarta").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = e.target;
+
+      const ahora = new Date(); // Obtiene la fecha y hora actual
+      const opciones = {
+        weekday: 'long', // Nombre completo del día de la semana (e.g., "jueves")
+        year: 'numeric', // Año como número (e.g., "2025")
+        month: 'long',   // Nombre completo del mes (e.g., "mayo")
+        day: 'numeric'    // Día del mes como número (e.g., "22")
+      };
+
+      // 'es-ES' para español de España, puedes usar 'es-MX' para español de México
+      // El formateador se encargará de los "de" y el orden correcto.
+      const formateador = new Intl.DateTimeFormat('es-MX', opciones);
+      const fechaFormateada = formateador.format(ahora);
+
+      const data = {
+        Nombre: form.Nombre.value,
+        Telefono: form.Telefono.value,
+        Correo: form.Correo.value,
+        Direccion: form.Direccion.value,
+        NumeroDeCredito: form.NumeroDeCredito.value,
+        FechaActual: fechaFormateada,
+        ListaDeDaños: danos.map((d, i) => `${i + 1}. ${d}`).join('\n')
+      };
+
+      const plantillaUrl = "plantilla.docx"; // Debes alojar la plantilla Word en el mismo servidor
+
+      const response = await fetch(plantillaUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const zip = new PizZip(arrayBuffer);
+      const doc = new window.docxtemplater().loadZip(zip);
+
+      doc.setData(data);
+
+      try {
+        doc.render();
+        const blob = doc.getZip().generate({ type: "blob" });
+        saveAs(blob, "Carta_Danos.docx");
+      } catch (error) {
+        console.error("Error al generar el documento", error);
+        alert("Ocurrió un error al generar el documento");
+      }
+    });
+  </script>
+</body>
+</html>
