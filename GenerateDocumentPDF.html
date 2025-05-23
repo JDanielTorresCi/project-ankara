@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generar Carta PDF</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    label, input, textarea { display: block; margin: 10px 0; }
+    .lista-danos li { margin-bottom: 5px; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Formulario para Generar Carta en PDF</h1>
+  <form id="formCarta">
+    <label>Nombre: <input type="text" name="Nombre" required></label>
+    <label>Teléfono: <input type="text" name="Telefono" required></label>
+    <label>Correo: <input type="email" name="Correo" required></label>
+    <label>Dirección: <input type="text" name="Direccion" required></label>
+    <label>Número de Crédito: <input type="text" name="NumeroDeCredito" required></label>
+
+    <label>Lista de Daños:</label>
+    <ul id="lista-danos" class="lista-danos"></ul>
+    <input type="text" id="nuevo-dano">
+    <button type="button" onclick="agregarDano()">Agregar Daño</button>
+
+    <button type="submit">Generar PDF</button>
+  </form>
+
+  <script>
+    const danos = [];
+
+    function agregarDano() {
+      const entrada = document.getElementById("nuevo-dano");
+      const texto = entrada.value.trim();
+      if (texto) {
+        danos.push(texto);
+        renderListaDanos();
+        entrada.value = '';
+      }
+    }
+
+    function renderListaDanos() {
+      const lista = document.getElementById("lista-danos");
+      lista.innerHTML = "";
+      danos.forEach((dano, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${index + 1}. ${dano}`;
+        const btn = document.createElement("button");
+        btn.textContent = "❌";
+        btn.style.marginLeft = "10px";
+        btn.onclick = () => {
+          danos.splice(index, 1);
+          renderListaDanos();
+        };
+        li.appendChild(btn);
+        lista.appendChild(li);
+      });
+    }
+
+    document.getElementById("formCarta").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+
+      doc.setFont("Times", "Roman");
+      doc.setFontSize(12);
+
+      const form = e.target;
+      const data = {
+        Nombre: form.Nombre.value,
+        Telefono: form.Telefono.value,
+        Correo: form.Correo.value,
+        Direccion: form.Direccion.value,
+        NumeroDeCredito: form.NumeroDeCredito.value,
+        FechaActual: new Date().toLocaleDateString("es-MX", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        ListaDeDaños: danos.map((d, i) => `${i + 1}. ${d}`).join('\n')
+      };
+
+      const texto = `
+${data.Nombre}
+${data.Direccion}
+Guaymas, Sonora.
+${data.FechaActual}
+
+Asunto: Reporte de Daños en Vivienda
+
+Por medio de la presente, yo, ${data.Nombre}, con número de crédito ${data.NumeroDeCredito},
+propietario de la vivienda ubicada en ${data.Direccion}, construida por la empresa ADMICONS EL ALAMO, S.A de C.V, les informo sobre los daños presentes en la propiedad.
+
+Adjunto a esta carta, les remito fotografías impresas que documentan los daños observados,
+los cuales incluyen:
+
+${data.ListaDeDaños}
+
+Estos daños considero han afectado la seguridad de la vivienda, por lo que solicito su intervención
+para realizar una inspección y determinar las acciones necesarias.
+
+Mis datos de contacto son los siguientes:v
+Teléfono: ${data.Telefono}
+Correo: ${data.Correo}
+
+Agradezco de antemano su atención a este asunto y quedo a la espera de su pronta respuesta.
+
+Atentamente,
+
+${data.Nombre}
+      `;
+
+      const margin = 20;
+      const lineas = doc.splitTextToSize(texto.trim(), 170);
+      doc.text(lineas, margin, 25, { align: "left" });
+
+      doc.save("Carta_Danos.pdf");
+    });
+  </script>
+</body>
+</html>

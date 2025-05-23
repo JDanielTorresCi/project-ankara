@@ -32,15 +32,34 @@
   <script>
     const danos = [];
 
+    function renderListaDanos() {
+      const lista = document.getElementById("lista-danos");
+      lista.innerHTML = "";
+
+      danos.forEach((dano, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${index + 1}. ${dano}`;
+
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "❌";
+        btnEliminar.style.marginLeft = "10px";
+        btnEliminar.onclick = () => {
+          danos.splice(index, 1);
+          renderListaDanos();
+        };
+
+        li.appendChild(btnEliminar);
+        lista.appendChild(li);
+      });
+    }
+
     function agregarDano() {
       const entrada = document.getElementById("nuevo-dano");
       const texto = entrada.value.trim();
       if (texto) {
         danos.push(texto);
-        const li = document.createElement("li");
-        li.textContent = texto;
-        document.getElementById("lista-danos").appendChild(li);
-        entrada.value = '';
+        entrada.value = "";
+        renderListaDanos();
       }
     }
 
